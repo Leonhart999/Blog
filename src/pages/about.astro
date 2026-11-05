@@ -1,0 +1,99 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Room from '../components/Room.astro';
+import Icon from '../components/Icon.astro';
+import { SITE } from '../consts';
+import { url } from '../lib/posts';
+---
+<BaseLayout title="信鸦塔 · 关于" description={`关于${SITE.title}和它的主人`}>
+  <Room
+    room="rookery"
+    title="信鸦塔 · 关于"
+    latin="The Rookery"
+    motto="塔顶住着几只渡鸦，庄园寄出去的信都由它们送。"
+    icon="raven"
+    hint="渡鸦会盯着你的鼠标看；点一只，它会叫两声。在下面写好信，就有一只替你送出去。"
+    crumbs={[{ name: '信鸦塔' }]}
+  >
+    <Fragment slot="controls">
+      <a class="room-btn" href="#letter"><Icon name="envelope" />写一封信</a>
+    </Fragment>
+    <Fragment slot="overlay">
+      <span id="estate-model" data-model={url('/models/estate.glb')} hidden></span>
+    </Fragment>
+  </Room>
+
+  <div class="wrap page">
+    <section class="block">
+      <div class="folio about-grid reveal">
+        <div class="prose" style="margin-top: 0">
+          <p>
+            你好，我是{SITE.author}，哈尔滨工程大学与南安普顿大学联合培养的控制工程方向本科生。
+            平时在做足式机器人的容错控制、激光雷达 SLAM 与移动机器人自主导航，也喜欢折腾各种小工具。
+          </p>
+          <p>
+            这座庄园是我的博客。技术笔记放在缮写室，做项目时的记录放在工坊，其余的闲谈和见闻放在旅店。
+            学习时踩过的坑、读论文时想明白的一点东西，我都希望能在这里留下来，也许对路过的人有用。
+          </p>
+          <p>
+            简历、论文和经历都在我的<a href={SITE.homepage}>个人主页</a>上。
+          </p>
+        </div>
+        <div class="seal-stage" id="seal" data-legend="LEONHART MANOR · MMXXVI ·">
+          <span class="wax" aria-hidden="true">{SITE.glyph}</span>
+          <span class="seal-cap">庄园的火漆印，可以拿鼠标转一转</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="block" id="letter">
+      <div class="sec-head reveal">
+        <span class="shield"><Icon name="envelope" /></span>
+        <div><h2>托渡鸦寄信</h2><p class="motto">Correspondence</p></div>
+        <span class="rule"></span>
+      </div>
+      <form class="letter-form folio reveal" id="letter-form">
+        <p class="letter-note">信不会经过任何服务器：点“放飞渡鸦”后，渡鸦飞走，你的邮件程序会打开一封写好的邮件，发不发由你决定。</p>
+        <label>你的称呼<input name="name" type="text" maxlength="40" required autocomplete="name" /></label>
+        <label>想说的话<textarea name="message" rows="5" maxlength="2000" required></textarea></label>
+        <div class="letter-foot">
+          <button class="room-btn" type="submit"><Icon name="raven" />放飞渡鸦</button>
+          <span class="room-readout">收信人：{SITE.email}</span>
+        </div>
+      </form>
+      <ul class="ledger reveal">
+        <li><b>邮箱</b><span><a href={`mailto:${SITE.email}`}>{SITE.email}</a></span></li>
+        <li><b>个人主页</b><span><a href={SITE.homepage}>{SITE.homepage.replace(/^https:\/\/|\/$/g, '')}</a></span></li>
+        <li><b>GitHub</b><span><a href={SITE.github}>{SITE.github.replace('https://', '')}</a></span></li>
+        <li><b>订阅</b><span><a href={url('/rss.xml')}>RSS</a>，新文章会第一时间送到你的阅读器里</span></li>
+      </ul>
+    </section>
+  </div>
+</BaseLayout>
+
+<script>
+  import { SITE } from '../consts';
+  const el = document.getElementById('room-stage');
+  if (el) import('../scripts/rooms/rookery.js').then((m) => m.mount(el)).catch((err) => { console.warn(err); el.classList.add('is-fallback'); });
+
+  const seal = document.getElementById('seal');
+  if (seal) {
+    import('../scripts/seal.js')
+      .then((m) => m.mountSeal(seal, { glyph: SITE.glyph, legend: seal.dataset.legend }))
+      .catch((err) => console.warn('3D seal unavailable', err));
+  }
+
+  // The letter goes out through the visitor's own mail client.
+  const form = document.getElementById('letter-form') as HTMLFormElement | null;
+  form?.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const fd = new FormData(form);
+    const name = String(fd.get('name') || '').trim();
+    const message = String(fd.get('message') || '').trim();
+    if (!name || !message) return;
+    const href = `mailto:${SITE.email}?subject=${encodeURIComponent(`来自${SITE.title}的信：${name}`)}&body=${encodeURIComponent(message + `\n\n—— ${name}`)}`;
+    const stage = document.getElementById('room-stage');
+    if (stage?.classList.contains('is-ready')) document.dispatchEvent(new CustomEvent('rookery-send', { detail: { href } }));
+    else location.href = href;
+  });
+</script>

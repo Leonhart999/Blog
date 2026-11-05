@@ -1,0 +1,107 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Room from '../../components/Room.astro';
+import EntryList from '../../components/EntryList.astro';
+import Icon from '../../components/Icon.astro';
+import { getPosts, tagCounts, tagUrl, url } from '../../lib/posts';
+import { arms, armsSvg, blazon } from '../../lib/heraldry.js';
+
+const posts = await getPosts();
+const tags = tagCounts(posts);
+const data = { tags: tags.map(([name, count]) => ({ name, count, url: tagUrl(name) })) };
+---
+<BaseLayout title="集市 · 标签" description="按标签浏览全部文章，每个标签都有自己的纹章">
+  <Room
+    room="market"
+    title="集市 · 纹章"
+    latin="The Market"
+    motto={`绳上挂着的每一面旗都是一个标签，共 ${tags.length} 面，旗上的纹章由标签名生成。`}
+    icon="banner"
+    hint="点一面旗筛选下面的文章，可以多选；再点一次取消。"
+    crumbs={[{ name: '集市' }]}
+    data={data}
+  >
+    <Fragment slot="overlay">
+      <span id="estate-model" data-model={url('/models/estate.glb')} hidden></span>
+    </Fragment>
+  </Room>
+
+  <div class="wrap page">
+    <section class="block">
+      <div class="sec-head reveal">
+        <span class="shield"><Icon name="banner" /></span>
+        <div><h2>纹章墙</h2><p class="motto">Roll of Arms</p></div>
+        <span class="rule"></span>
+      </div>
+      {tags.length ? (
+        <div class="arms-roll reveal">
+          {tags.map(([t, n]) => {
+            const a = arms(t);
+            return (
+              <a class="arms-item" href={tagUrl(t)} data-tag-toggle={t} title={blazon(a)}>
+                <span class="arms-svg" set:html={armsSvg(a, { size: 56, title: t })} />
+                <span class="arms-name">{t}<small>{n} 篇</small></span>
+              </a>
+            );
+          })}
+        </div>
+      ) : <p class="empty"><Icon name="banner" />集市还没开张。</p>}
+    </section>
+
+    <section class="block">
+      <div class="sec-head reveal">
+        <span class="shield"><Icon name="scroll" /></span>
+        <div><h2>集市上的文章</h2><p class="motto">Wares</p></div>
+        <span class="rule"></span>
+      </div>
+      <p class="filter-status reveal"><span id="tag-filter-status">全部 <b>{posts.length}</b> 篇</span> <button class="room-btn ghost" id="tag-filter-clear" type="button" hidden>清除筛选</button></p>
+      <EntryList posts={posts} />
+    </section>
+
+    <section class="block">
+      <div class="sec-head reveal">
+        <span class="shield"><Icon name="fleur" /></span>
+        <div><h2>纹章官的案台</h2><p class="motto">The Herald's Desk</p></div>
+        <span class="rule"></span>
+      </div>
+      <div class="herald folio reveal">
+        <div class="herald-form">
+          <label for="herald-name">写下一个名字或一个词，纹章官会为它画一面纹章。同一个词每次得到的纹章都一样。</label>
+          <div class="herald-row">
+            <input id="herald-name" type="text" maxlength="16" placeholder="例如：你的名字" autocomplete="off" />
+            <button class="room-btn" id="herald-forge" type="button"><Icon name="banner" />挂到集市上</button>
+          </div>
+          <p class="herald-blazon" id="herald-blazon"></p>
+          <p class="herald-actions"><a class="room-btn ghost" id="herald-download" download="arms.svg" href="#">下载 SVG</a></p>
+        </div>
+        <div class="herald-preview" id="herald-preview" aria-live="polite"></div>
+      </div>
+    </section>
+  </div>
+</BaseLayout>
+
+<script>
+  import { arms, armsSvg, blazon } from '../../lib/heraldry.js';
+  const el = document.getElementById('room-stage');
+  if (el) import('../../scripts/rooms/market.js').then((m) => m.mount(el)).catch((err) => { console.warn(err); el.classList.add('is-fallback'); });
+
+  // Heraldry tool
+  const input = document.getElementById('herald-name') as HTMLInputElement | null;
+  const preview = document.getElementById('herald-preview');
+  const text = document.getElementById('herald-blazon');
+  const dl = document.getElementById('herald-download') as HTMLAnchorElement | null;
+  const draw = () => {
+    const name = input?.value.trim() || '莱昂哈特庄园';
+    const a = arms(name);
+    const svg = armsSvg(a, { size: 220, title: name, id: 'herald' });
+    if (preview) preview.innerHTML = svg + `<p>${name.replace(/[&<>]/g, '')}</p>`;
+    if (text) text.textContent = '纹章描述：' + blazon(a);
+    if (dl) { dl.href = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg); dl.download = `arms-${name}.svg`; }
+  };
+  input?.addEventListener('input', draw);
+  document.getElementById('herald-forge')?.addEventListener('click', () => {
+    const name = input?.value.trim() || '莱昂哈特庄园';
+    document.dispatchEvent(new CustomEvent('heraldry-forge', { detail: { name } }));
+  });
+  draw();
+</script>

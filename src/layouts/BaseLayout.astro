@@ -1,0 +1,95 @@
+---
+import '../styles/castle.css';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+import { SITE } from '../consts';
+import { url } from '../lib/posts';
+
+interface Props {
+  title?: string;
+  description?: string;
+  type?: 'website' | 'article';
+}
+const { title, description = SITE.description, type = 'website' } = Astro.props;
+const fullTitle = title ? `${title} | ${SITE.title}` : `${SITE.title} · ${SITE.titleLatin}`;
+const canonical = new URL(Astro.url.pathname, Astro.site);
+---
+<!doctype html>
+<html lang={SITE.lang} class="no-js">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>{fullTitle}</title>
+  <meta name="description" content={description} />
+  <meta name="author" content={SITE.author} />
+  <meta name="theme-color" content="#3a291c" />
+  <link rel="canonical" href={canonical} />
+  <link rel="icon" href={url('/favicon.svg')} type="image/svg+xml" />
+  <link rel="alternate" type="application/rss+xml" title={SITE.title} href={url('/rss.xml')} />
+  <link rel="sitemap" href={url('/sitemap-index.xml')} />
+  <meta property="og:type" content={type} />
+  <meta property="og:title" content={fullTitle} />
+  <meta property="og:description" content={description} />
+  <meta property="og:url" content={canonical} />
+  <meta property="og:locale" content="zh_CN" />
+  <script is:inline>
+    // Apply the saved day/night choice before first paint.
+    document.documentElement.classList.remove('no-js');
+    try { var t = localStorage.getItem('castle-theme'); if (t) document.documentElement.dataset.theme = t; } catch (e) {}
+  </script>
+  <slot name="head" />
+</head>
+<body>
+  <a class="skip" href="#main">跳到正文</a>
+  <Header />
+  <main id="main"><slot /></main>
+  <Footer />
+  <script>
+    // Day / night toggle. The choice is a per-browser convenience in localStorage.
+    const root = document.documentElement;
+    const btn = document.getElementById('theme-btn');
+    const current = () => root.dataset.theme || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+    const label = () => {
+      const text = current() === 'dark' ? '切换到白天' : '切换到夜晚';
+      btn?.setAttribute('aria-label', text);
+      btn?.setAttribute('title', text);
+    };
+    label();
+    btn?.addEventListener('click', () => {
+      const next = current() === 'dark' ? 'light' : 'dark';
+      root.dataset.theme = next;
+      try { localStorage.setItem('castle-theme', next); } catch { /* storage unavailable */ }
+      label();
+    });
+
+    // Sound toggle for the rooms' effects.
+    import { soundOn, setSound } from '../scripts/sfx.js';
+    const sbtn = document.getElementById('sound-btn');
+    const paintSound = () => {
+      const on = soundOn();
+      sbtn?.classList.toggle('is-off', !on);
+      const text = on ? '关闭音效' : '打开音效';
+      sbtn?.setAttribute('aria-label', text);
+      sbtn?.setAttribute('title', text);
+    };
+    paintSound();
+    sbtn?.addEventListener('click', () => { setSound(!soundOn()); paintSound(); });
+
+    // Fade sections in as they scroll into view.
+    const items = document.querySelectorAll<HTMLElement>('.reveal');
+    if (!('IntersectionObserver' in window)) {
+      items.forEach((el) => el.classList.add('in'));
+    } else {
+      const io = new IntersectionObserver((entries) => {
+        for (const e of entries) if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); }
+      }, { threshold: 0.06, rootMargin: '0px 0px -30px 0px' });
+      const vh = innerHeight;
+      items.forEach((el, i) => {
+        const r = el.getBoundingClientRect();
+        if (r.top < vh * 0.95 && r.bottom > 0) el.classList.add('in');
+        else { el.style.transitionDelay = (i % 4) * 50 + 'ms'; io.observe(el); }
+      });
+    }
+  </script>
+</body>
+</html>

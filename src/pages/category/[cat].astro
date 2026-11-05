@@ -1,0 +1,105 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Room from '../../components/Room.astro';
+import EntryList from '../../components/EntryList.astro';
+import Icon from '../../components/Icon.astro';
+import { CATEGORIES, CATEGORY_KEYS, type CategoryKey } from '../../consts';
+import { getPosts, postUrl, formatDate, readingStats } from '../../lib/posts';
+
+export function getStaticPaths() {
+  return CATEGORY_KEYS.map((cat) => ({ params: { cat } }));
+}
+const cat = Astro.params.cat as CategoryKey;
+const c = CATEGORIES[cat];
+const all = await getPosts();
+const posts = all.filter((p) => p.data.category === cat);
+const brief = (p: (typeof all)[number]) => ({
+  title: p.data.title,
+  url: postUrl(p),
+  date: formatDate(p.data.date),
+  description: p.data.description,
+  tags: p.data.tags,
+  minutes: readingStats(p.body).minutes,
+  hall: CATEGORIES[p.data.category].hall,
+});
+const data = { posts: posts.map(brief), all: all.map(brief) };
+
+// Each category is its own room on the estate.
+const ROOM = {
+  tech: {
+    room: 'scriptorium', title: '缮写室 · 技术', latin: 'The Scriptorium',
+    hint: '翻动桌上的抄本，每一页是一篇技术笔记；点右页翻开全文。烛火可以吹灭，也可以再点亮。',
+  },
+  projects: {
+    room: 'workshop', title: '工坊 · 项目', latin: 'The Workshop',
+    hint: '拖动墙上的大齿轮给风箱鼓风，炉火会越烧越旺；点一下铁砧，锤子就落下去。',
+  },
+  essays: {
+    room: 'inn', title: '旅店 · 随笔', latin: 'The Inn',
+    hint: '掷一把骰子，让命运替你挑一篇文章；炉火太弱的话，点一下添把柴。',
+  },
+} as const;
+const r = ROOM[cat];
+---
+<BaseLayout title={`${c.hall} · ${c.name}`} description={c.motto}>
+  <Room
+    room={r.room}
+    title={r.title}
+    latin={r.latin}
+    motto={`${c.motto}。共 ${posts.length} 篇。`}
+    icon={c.icon}
+    hint={r.hint}
+    crumbs={[{ name: c.hall }]}
+    data={data}
+  >
+    <Fragment slot="controls">
+      {cat === 'tech' && (
+        <>
+          <button class="room-btn ghost" id="codex-prev" type="button">← 上一页</button>
+          <button class="room-btn" id="codex-next" type="button">下一页 →</button>
+          <span class="room-readout" id="codex-page"></span>
+        </>
+      )}
+      {cat === 'projects' && (
+        <>
+          <button class="room-btn" id="anvil-strike" type="button"><Icon name="anvil" />敲一下铁砧</button>
+          <span class="room-readout">炉温 <b id="forge-heat">0</b>% · 已锻打 <b id="anvil-count">0</b> 次</span>
+        </>
+      )}
+      {cat === 'essays' && (
+        <>
+          <button class="room-btn" id="dice-roll" type="button"><Icon name="bag" />掷骰子</button>
+          <button class="room-btn ghost" id="fire-stoke" type="button"><Icon name="candle" />添把柴</button>
+        </>
+      )}
+    </Fragment>
+    <Fragment slot="overlay">
+      {cat === 'essays' && <div class="fate-card" id="fate-card" hidden></div>}
+    </Fragment>
+  </Room>
+
+  <div class="wrap page">
+    <section class="block">
+      <div class="sec-head reveal">
+        <span class="shield"><Icon name={c.icon} /></span>
+        <div><h2>{c.hall}里的文章</h2><p class="motto">{c.latin}</p></div>
+        <span class="rule"></span>
+      </div>
+      {posts.length ? <EntryList posts={posts} showHall={false} /> : (
+        <p class="empty"><Icon name={c.icon} />这间屋子还空着，第一篇文章正在路上。</p>
+      )}
+    </section>
+  </div>
+</BaseLayout>
+
+<script>
+  const loaders: Record<string, () => Promise<{ mount: (el: HTMLElement) => unknown }>> = {
+    scriptorium: () => import('../../scripts/rooms/scriptorium.js'),
+    workshop: () => import('../../scripts/rooms/workshop.js'),
+    inn: () => import('../../scripts/rooms/inn.js'),
+  };
+  const section = document.querySelector<HTMLElement>('.room');
+  const el = document.getElementById('room-stage');
+  const load = section && loaders[section.dataset.room || ''];
+  if (el && load) load().then((m) => m.mount(el)).catch((err) => { console.warn(err); el.classList.add('is-fallback'); });
+</script>

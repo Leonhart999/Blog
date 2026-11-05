@@ -1,0 +1,13 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Icon from '../components/Icon.astro';
+import { url } from '../lib/posts';
+---
+<BaseLayout title="此路不通">
+  <div class="wrap lost">
+    <span class="shield lg"><Icon name="map" /></span>
+    <h1>此路不通</h1>
+    <p>地图上没有这个地方，也许它已经搬走了，或者还没建成。</p>
+    <a class="btn" href={url('/')}>回到庄园</a>
+  </div>
+</BaseLayout>

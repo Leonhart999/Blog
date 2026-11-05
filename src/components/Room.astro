@@ -1,0 +1,53 @@
+---
+// Hero for a section page: a 3D interior with a title plaque and room controls.
+// The page passes its data as JSON and mounts the room script itself.
+import { url } from '../lib/posts';
+import Icon from './Icon.astro';
+
+interface Props {
+  room: 'keep' | 'scriptorium' | 'workshop' | 'inn' | 'market' | 'rookery';
+  title: string;
+  latin: string;
+  motto: string;
+  icon: string;
+  hint: string;
+  crumbs?: { name: string; href?: string }[];
+  data?: unknown;
+}
+const { room, title, latin, motto, icon, hint, crumbs = [], data = {} } = Astro.props;
+// Escape "<" so the JSON cannot close the script tag.
+const json = JSON.stringify(data).replace(/</g, '\\u003c');
+---
+<section class={`room room-${room}`} data-room={room} data-rooms-model={url('/models/rooms.glb')}>
+  <div class="room-stage" id="room-stage">
+    <div class="room-loading" aria-hidden="true">正在布置房间</div>
+    <div class="room-tip" id="room-tip" hidden></div>
+    <slot name="overlay" />
+  </div>
+  <div class="room-plaque">
+    <div class="wrap">
+      <div class="room-card">
+      <nav class="crumbs" aria-label="位置">
+        <a href={url('/')}>庄园</a>
+        {crumbs.map((c) => (
+          <>
+            <span aria-hidden="true">◆</span>
+            {c.href ? <a href={url(c.href)}>{c.name}</a> : <span>{c.name}</span>}
+          </>
+        ))}
+      </nav>
+      <div class="banner-head">
+        <span class="shield lg"><Icon name={icon} /></span>
+        <div>
+          <p class="latin">{latin}</p>
+          <h1>{title}</h1>
+        </div>
+      </div>
+      <p class="motto">{motto}</p>
+      <p class="room-hint"><Icon name="map" />{hint}</p>
+      <div class="room-controls"><slot name="controls" /></div>
+      </div>
+    </div>
+  </div>
+</section>
+<script type="application/json" id="room-data" set:html={json} />

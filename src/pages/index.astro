@@ -1,0 +1,67 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Estate from '../components/Estate.astro';
+import EntryList from '../components/EntryList.astro';
+import Icon from '../components/Icon.astro';
+import { CATEGORIES, CATEGORY_KEYS } from '../consts';
+import { getPosts, url, formatDate, tagCounts, tagUrl } from '../lib/posts';
+
+const posts = await getPosts();
+const latest = posts.slice(0, 8);
+const tags = tagCounts(posts).slice(0, 24);
+const count = (k: string) => posts.filter((p) => p.data.category === k).length;
+---
+<BaseLayout>
+  <Estate postCount={posts.length} lastDate={posts[0] && formatDate(posts[0].data.updated ?? posts[0].data.date)} />
+
+  <div class="wrap page">
+    <section class="block">
+      <div class="sec-head reveal">
+        <span class="shield"><Icon name="scroll" /></span>
+        <div><h2>新近告示</h2><p class="motto">Latest Notices</p></div>
+        <span class="rule"></span>
+        <a class="more" href={url('/archive/')}>全部文章 →</a>
+      </div>
+      {latest.length ? <EntryList posts={latest} /> : (
+        <p class="empty"><Icon name="quill" />庄园刚刚落成，第一篇文章正在路上。</p>
+      )}
+    </section>
+
+    <section class="block">
+      <div class="sec-head reveal">
+        <span class="shield"><Icon name="keep" /></span>
+        <div><h2>庄园分区</h2><p class="motto">Halls of the Manor</p></div>
+        <span class="rule"></span>
+      </div>
+      <div class="halls">
+        {CATEGORY_KEYS.map((k) => {
+          const c = CATEGORIES[k];
+          return (
+            <a class="hall reveal" href={url(`/category/${k}/`)}>
+              <div class="hall-top">
+                <span class="boss"><Icon name={c.icon} /></span>
+                <h3>{c.hall} · {c.name}<small>{c.latin}</small></h3>
+              </div>
+              <p>{c.motto}</p>
+              <div class="hall-foot"><span><b>{count(k)}</b>篇</span><span class="go">入内 →</span></div>
+            </a>
+          );
+        })}
+      </div>
+    </section>
+
+    {tags.length > 0 && (
+      <section class="block">
+        <div class="sec-head reveal">
+          <span class="shield"><Icon name="banner" /></span>
+          <div><h2>集市纹章</h2><p class="motto">Tags</p></div>
+          <span class="rule"></span>
+          <a class="more" href={url('/tags/')}>全部标签 →</a>
+        </div>
+        <div class="pennants reveal">
+          {tags.map(([t, n]) => <a class="pennant" href={tagUrl(t)}>{t}<small>{n}</small></a>)}
+        </div>
+      </section>
+    )}
+  </div>
+</BaseLayout>

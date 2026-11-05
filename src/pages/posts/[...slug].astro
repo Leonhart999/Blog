@@ -1,0 +1,113 @@
+---
+import 'katex/dist/katex.min.css';
+import { render } from 'astro:content';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Banner from '../../components/Banner.astro';
+import Icon from '../../components/Icon.astro';
+import { CATEGORIES, SITE } from '../../consts';
+import { getPosts, postUrl, tagUrl, formatDate, isoDate, readingStats, type Post } from '../../lib/posts';
+
+export async function getStaticPaths() {
+  const posts = await getPosts();
+  // posts are newest first: "newer" is the previous index, "older" the next one.
+  return posts.map((post, i) => ({
+    params: { slug: post.id },
+    props: { post, newer: posts[i - 1], older: posts[i + 1] },
+  }));
+}
+interface Props { post: Post; newer?: Post; older?: Post }
+const { post, newer, older } = Astro.props;
+const { Content, headings } = await render(post);
+const hall = CATEGORIES[post.data.category];
+const stats = readingStats(post.body);
+const toc = headings.filter((h) => h.depth === 2 || h.depth === 3);
+---
+<BaseLayout title={post.data.title} description={post.data.description} type="article">
+  <Banner
+    title={post.data.title}
+    latin={`${hall.latin} · ${hall.hall}`}
+    icon={hall.icon}
+    crumbs={[{ name: hall.hall, href: `/category/${post.data.category}/` }, { name: '正文' }]}
+  >
+    <div class="post-meta">
+      <span><Icon name="sundial" /><time datetime={isoDate(post.data.date)}>{formatDate(post.data.date)}</time></span>
+      {post.data.updated && <span>修订于 {formatDate(post.data.updated)}</span>}
+      <span><Icon name="hourglass" />约 {stats.chars} 字 · {stats.minutes} 分钟</span>
+      {post.data.draft && <span class="draft-mark">草稿</span>}
+    </div>
+  </Banner>
+
+  <div class="wrap page">
+    <div class={`folio-grid ${toc.length < 2 ? 'no-toc' : ''}`}>
+      <article class="folio post-head">
+        <p class="motto" style="color: var(--ink-3)">{post.data.description}</p>
+        {post.data.tags.length > 0 && (
+          <div class="tags">{post.data.tags.map((t) => <a class="tag" href={tagUrl(t)}>{t}</a>)}</div>
+        )}
+        <div class="prose" id="prose"><Content /></div>
+        <p class="sealed"><span class="wax" aria-hidden="true">{SITE.glyph}</span>封缄于 {formatDate(post.data.updated ?? post.data.date)}</p>
+      </article>
+
+      {toc.length >= 2 && (
+        <aside class="toc" aria-label="目录">
+          <p class="toc-title"><Icon name="map" />目录</p>
+          <ol>
+            {toc.map((h) => <li class={`d${h.depth}`}><a href={`#${h.slug}`}>{h.text}</a></li>)}
+          </ol>
+        </aside>
+      )}
+    </div>
+
+    {(newer || older) && (
+      <nav class="pager" aria-label="相邻文章">
+        {older && <a href={postUrl(older)}><small>← 更早一篇</small><b>{older.data.title}</b></a>}
+        {newer && <a class="next" href={postUrl(newer)}><small>更新一篇 →</small><b>{newer.data.title}</b></a>}
+      </nav>
+    )}
+  </div>
+</BaseLayout>
+
+<script>
+  // Frame each code block with a language label and a copy button.
+  document.querySelectorAll<HTMLPreElement>('#prose pre').forEach((pre) => {
+    const wrap = document.createElement('div');
+    wrap.className = 'codeblock';
+    const bar = document.createElement('div');
+    bar.className = 'codeblock-bar';
+    const lang = document.createElement('span');
+    lang.textContent = pre.dataset.language && pre.dataset.language !== 'plaintext' ? pre.dataset.language : 'text';
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'copy-btn';
+    btn.textContent = '复制';
+    btn.addEventListener('click', async () => {
+      try {
+        await navigator.clipboard.writeText(pre.innerText);
+        btn.textContent = '已复制';
+      } catch {
+        btn.textContent = '复制失败';
+      }
+      setTimeout(() => { btn.textContent = '复制'; }, 1600);
+    });
+    bar.append(lang, btn);
+    pre.replaceWith(wrap);
+    wrap.append(bar, pre);
+  });
+
+  // Highlight the table-of-contents entry for the section being read.
+  const links = [...document.querySelectorAll<HTMLAnchorElement>('.toc a')];
+  if (links.length && 'IntersectionObserver' in window) {
+    const byId = new Map(links.map((a) => [decodeURIComponent(a.hash.slice(1)), a]));
+    const visible = new Set<string>();
+    const heads = [...byId.keys()].map((id) => document.getElementById(id)).filter(Boolean) as HTMLElement[];
+    const mark = () => {
+      const first = heads.find((h) => visible.has(h.id)) ?? [...heads].reverse().find((h) => h.getBoundingClientRect().top < 120);
+      links.forEach((a) => a.classList.toggle('on', !!first && byId.get(first.id) === a));
+    };
+    const io = new IntersectionObserver((entries) => {
+      for (const e of entries) (e.isIntersecting ? visible.add(e.target.id) : visible.delete(e.target.id));
+      mark();
+    }, { rootMargin: '-90px 0px -60% 0px' });
+    heads.forEach((h) => io.observe(h));
+  }
+</script>

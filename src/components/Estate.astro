@@ -1,0 +1,67 @@
+---
+// Home hero: the 3D estate. Each building is a pin linking to a part of the blog.
+import { SITE, SPOTS } from '../consts';
+import { url } from '../lib/posts';
+import Icon from './Icon.astro';
+interface Props { postCount: number; lastDate?: string }
+const { postCount, lastDate } = Astro.props;
+---
+<section class="sky hero">
+  <div class="sky-night" aria-hidden="true"></div>
+  <div class="estate" id="estate" data-model={url('/models/estate.glb')} data-glyph={SITE.glyph}>
+    <div class="estate-loading" aria-hidden="true">庄园正在升起</div>
+    <svg class="estate-fallback" viewBox="0 0 600 340" aria-hidden="true" fill="currentColor">
+      <path d="M0 340 C120 260 220 250 300 252 C390 254 480 262 600 340Z"/>
+      <path d="M190 258V170h-8v-24h12v10h12v-10h12v10h12v-10h12v24h-8v88zM330 258V150h-10v-30l25-40 25 40v30h-10v108zM240 258v-60h-6v-18h10v8h10v-8h10v8h10v-8h10v8h10v-8h10v18h-6v60z"/>
+    </svg>
+    <nav class="estate-pins" aria-label="庄园地图">
+      {SPOTS.map((s) => (
+        <a class="pin" href={url(s.href)} data-spot={s.spot}>
+          <span class="pin-label"><span class="pin-no">{s.numeral}</span><span class="pin-name">{s.hall}<small>· {s.name}</small></span></span>
+        </a>
+      ))}
+    </nav>
+  </div>
+  <div class="hero-in">
+    <div class="hero-text">
+      <p class="eyebrow"><Icon name="fleur" />{SITE.authorLatin}'s Blog</p>
+      <h1>{SITE.title}</h1>
+      <p class="name-alt">{SITE.titleLatin}</p>
+      <p class="lede">
+        这里是{SITE.author}的博客。缮写室里放<em>技术笔记</em>，工坊里记<em>项目手记</em>，
+        旅店里写一些路上的<em>随笔</em>。
+      </p>
+      <p class="hero-stats">
+        <span><b>{postCount}</b>篇文章</span>
+        {lastDate && <span>最近更新于 {lastDate}</span>}
+      </p>
+      <p class="hint"><Icon name="map" />拖动可以转动庄园，点一座建筑就能进去看看。</p>
+    </div>
+  </div>
+</section>
+
+<script>
+  // Load three.js and the models only after the page itself has rendered.
+  const el = document.getElementById('estate');
+  if (el) {
+    import('../scripts/estate.js')
+      .then((m) => m.mountEstate(el, {
+        modelUrl: el.dataset.model,
+        glyph: el.dataset.glyph,
+        onSelect: (id: string) => {
+          const pin = el.querySelector<HTMLAnchorElement>(`[data-spot="${id}"]`);
+          if (pin) location.href = pin.href;
+        },
+      }))
+      .then((api) => {
+        // Pins fly the camera in too, unless the visitor opens a new tab.
+        if (!api) return;
+        el.querySelectorAll<HTMLAnchorElement>('[data-spot]').forEach((pin) => pin.addEventListener('click', (e) => {
+          if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return;
+          e.preventDefault();
+          api.flyTo(pin.dataset.spot);
+        }));
+      })
+      .catch((err) => { console.warn('3D estate unavailable', err); el.classList.add('is-fallback'); });
+  }
+</script>

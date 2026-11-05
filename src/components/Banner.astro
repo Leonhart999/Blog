@@ -1,0 +1,39 @@
+---
+// Page banner for inner pages: breadcrumb, heraldic shield, title, motto.
+import { url } from '../lib/posts';
+import Icon from './Icon.astro';
+import Skyline from './Skyline.astro';
+interface Props {
+  title: string;
+  latin?: string;
+  motto?: string;
+  numeral?: string;
+  icon?: string;
+  crumbs?: { name: string; href?: string }[];
+}
+const { title, latin, motto, numeral, icon, crumbs = [] } = Astro.props;
+---
+<section class="sky banner">
+  <div class="sky-night" aria-hidden="true"></div>
+  <div class="wrap">
+    <nav class="crumbs" aria-label="位置">
+      <a href={url('/')}>庄园</a>
+      {crumbs.map((c) => (
+        <>
+          <span aria-hidden="true">◆</span>
+          {c.href ? <a href={url(c.href)}>{c.name}</a> : <span>{c.name}</span>}
+        </>
+      ))}
+    </nav>
+    <div class="banner-head">
+      <span class="shield lg">{icon ? <Icon name={icon} /> : <span>{numeral}</span>}</span>
+      <div>
+        {latin && <p class="latin">{latin}</p>}
+        <h1>{title}</h1>
+      </div>
+    </div>
+    {motto && <p class="motto">{motto}</p>}
+    <slot />
+  </div>
+  <Skyline />
+</section>

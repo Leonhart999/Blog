@@ -1,0 +1,15 @@
+---
+// Icon from the game-icons sprite (public/icons.svg), or the built-in RSS glyph.
+import { url } from '../lib/posts';
+interface Props { name: string; class?: string }
+const { name, class: cls = '' } = Astro.props;
+---
+{name === 'sound-on' ? (
+  <svg class={`icon ${cls}`} viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9h4l5-4v14l-5-4H4zM16 8.5a5 5 0 0 1 0 7l-1.4-1.4a3 3 0 0 0 0-4.2zM18.8 5.7a9 9 0 0 1 0 12.6l-1.4-1.4a7 7 0 0 0 0-9.8z"/></svg>
+) : name === 'sound-off' ? (
+  <svg class={`icon ${cls}`} viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9h4l5-4v14l-5-4H4zM16.3 9.3l1.4-1.4 2.1 2.1 2.1-2.1 1.4 1.4-2.1 2.1 2.1 2.1-1.4 1.4-2.1-2.1-2.1 2.1-1.4-1.4 2.1-2.1z"/></svg>
+) : name === 'rss' ? (
+  <svg class={`icon ${cls}`} viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3a16 16 0 0 1 16 16h-3A13 13 0 0 0 5 6zm0 6a10 10 0 0 1 10 10h-3a7 7 0 0 0-7-7zm2 6a2 2 0 1 1 0 4 2 2 0 0 1 0-4z"/></svg>
+) : (
+  <svg class={`icon ${cls}`} aria-hidden="true"><use href={url(`/icons.svg#i-${name}`)} /></svg>
+)}

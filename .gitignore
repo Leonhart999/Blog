@@ -1,0 +1,7 @@
+node_modules/
+dist/
+.astro/
+# Downloaded third-party sources used by scripts/ (re-download as described in README)
+.vendor-src/
+# Local screenshots
+dev/

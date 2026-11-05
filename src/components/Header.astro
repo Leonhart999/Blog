@@ -1,0 +1,37 @@
+---
+import { NAV, SITE } from '../consts';
+import { url } from '../lib/posts';
+import Icon from './Icon.astro';
+const here = Astro.url.pathname;
+// "/" is current only on the home page; other entries match their section prefix.
+const isCurrent = (href: string) => {
+  const full = url(href);
+  return href === '/' ? here === full : here.startsWith(full);
+};
+---
+<header class="topbar">
+  <div class="topbar-in">
+    <a href={url('/')} class="brand">
+      <span class="wax" aria-hidden="true">{SITE.glyph}</span>
+      <span class="brand-name">{SITE.title}<small>{SITE.titleLatin}</small></span>
+    </a>
+    <div class="right">
+      <nav class="nav" aria-label="栏目">
+        {NAV.map((item) => (
+          <a href={url(item.href)} aria-current={isCurrent(item.href) ? 'page' : undefined}>{item.name}</a>
+        ))}
+      </nav>
+      <div class="tools">
+        <button class="tool-btn sound-btn" id="sound-btn" type="button" aria-label="音效" title="音效">
+          <Icon name="sound-on" class="i-on" />
+          <Icon name="sound-off" class="i-off" />
+        </button>
+        <a class="tool-btn" href={url('/rss.xml')} title="RSS 订阅" aria-label="RSS 订阅"><Icon name="rss" /></a>
+        <button class="tool-btn theme-btn" id="theme-btn" type="button" aria-label="切换白天与夜晚" title="切换白天与夜晚">
+          <Icon name="sun" class="i-sun" />
+          <Icon name="moon" class="i-moon" />
+        </button>
+      </div>
+    </div>
+  </div>
+</header>

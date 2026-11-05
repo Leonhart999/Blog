@@ -1,0 +1,24 @@
+---
+import { SITE } from '../consts';
+import { url } from '../lib/posts';
+import Icon from './Icon.astro';
+const year = new Date().getFullYear();
+---
+<footer class="wall">
+  <div class="wrap foot-in">
+    <div class="foot-row">
+      <div class="foot-left"><span class="wax" aria-hidden="true">{SITE.glyph}</span><span>{SITE.title} © {year} {SITE.author}</span></div>
+      <div class="foot-links">
+        <a href={SITE.homepage}><Icon name="keep" />个人主页</a>
+        <a href={SITE.github}><Icon name="banner" />GitHub</a>
+        <a href={url('/rss.xml')}><Icon name="rss" />RSS</a>
+      </div>
+    </div>
+    <p class="credits">
+      庄园模型来自 Kay Lousberg 的 <a href="https://github.com/KayKit-Game-Assets/KayKit-Medieval-Hexagon-Pack-1.0">Medieval Hexagon Pack</a> 与 <a href="https://github.com/KayKit-Game-Assets/KayKit-Dungeon-Remastered-1.0">Dungeon Remastered</a>（CC0）；
+      浮岛、瀑布、书本、抄本、齿轮、铁砧、骰子、旗帜、渡鸦与火漆印为本站用 <a href="https://threejs.org/">three.js</a> 制作。
+      图标来自 <a href="https://game-icons.net/">game-icons.net</a>，作者 Lorc 与 Delapouite（CC BY 3.0）。
+      字体 Cinzel、EB Garamond（SIL OFL）。站点由 <a href="https://astro.build/">Astro</a> 生成。
+    </p>
+  </div>
+</footer>

@@ -1,0 +1,21 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Banner from '../../components/Banner.astro';
+import EntryList from '../../components/EntryList.astro';
+import { getPosts, tagCounts } from '../../lib/posts';
+
+export async function getStaticPaths() {
+  const posts = await getPosts();
+  return tagCounts(posts).map(([tag]) => ({
+    params: { tag },
+    props: { tag, posts: posts.filter((p) => p.data.tags.includes(tag)) },
+  }));
+}
+const { tag, posts } = Astro.props;
+---
+<BaseLayout title={`标签：${tag}`} description={`标签“${tag}”下的文章`}>
+  <Banner title={tag} latin="Tag" motto={`挂着这面纹章的文章共 ${posts.length} 篇。`} icon="banner" crumbs={[{ name: '集市', href: '/tags/' }, { name: tag }]} />
+  <div class="wrap page">
+    <section class="block"><EntryList posts={posts} /></section>
+  </div>
+</BaseLayout>

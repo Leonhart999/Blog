@@ -1,0 +1,37 @@
+---
+// List of post entries, styled as manuscript catalogue lines.
+import { CATEGORIES } from '../consts';
+import { type Post, postUrl, tagUrl, url, roman, readingStats, isoDate } from '../lib/posts';
+import Icon from './Icon.astro';
+interface Props { posts: Post[]; showHall?: boolean }
+const { posts, showHall = true } = Astro.props;
+---
+<ol class="entries">
+  {posts.map((post) => {
+    const d = post.data.date;
+    const hall = CATEGORIES[post.data.category];
+    const stats = readingStats(post.body);
+    return (
+      <li class="entry reveal" data-tags={JSON.stringify(post.data.tags)}>
+        <time class="entry-date" datetime={isoDate(d)}>
+          <b>{d.getUTCDate()}</b>
+          <span>{roman(d.getUTCMonth() + 1)} · {d.getUTCFullYear()}</span>
+        </time>
+        <div>
+          {showHall && (
+            <a class="entry-hall" href={url(`/category/${post.data.category}/`)}><Icon name={hall.icon} />{hall.hall} · {hall.name}</a>
+          )}
+          <h3><a href={postUrl(post)}>{post.data.title}</a></h3>
+          <p>{post.data.description}</p>
+          <div class="entry-meta">
+            {post.data.draft && <span class="draft-mark">草稿</span>}
+            <span>约 {stats.minutes} 分钟读完</span>
+            {post.data.tags.length > 0 && (
+              <span class="tags">{post.data.tags.map((t) => <a class="tag" href={tagUrl(t)}>{t}</a>)}</span>
+            )}
+          </div>
+        </div>
+      </li>
+    );
+  })}
+</ol>

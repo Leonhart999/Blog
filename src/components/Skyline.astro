@@ -1,0 +1,36 @@
+---
+// Castle-and-village silhouette along the bottom of page banners,
+// generated from a fixed seed so every page shows the same skyline.
+let seed = 7;
+const rand = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
+const W = 1440, H = 120;
+let x = 0;
+let d = `M0 ${H}`;
+while (x < W) {
+  const kind = rand();
+  const w = 30 + Math.floor(rand() * 60);
+  const h = kind < 0.25 ? 70 + rand() * 40 : kind < 0.6 ? 28 + rand() * 24 : 14 + rand() * 12;
+  const top = H - h;
+  d += ` V${top.toFixed(0)}`;
+  if (kind < 0.25) {
+    // tower with crenellations
+    const m = Math.max(3, Math.floor(w / 10));
+    const step = w / (m * 2 - 1);
+    for (let i = 0; i < m * 2 - 1; i++) {
+      d += ` h${step.toFixed(1)}`;
+      if (i < m * 2 - 2) d += ` v${i % 2 === 0 ? 8 : -8}`;
+    }
+  } else if (kind < 0.6) {
+    // house with a pitched roof
+    d += ` l${(w / 2).toFixed(1)} -${(h * 0.45).toFixed(0)} l${(w / 2).toFixed(1)} ${(h * 0.45).toFixed(0)}`;
+  } else {
+    d += ` h${w}`;
+  }
+  x += w;
+  const gap = 8 + Math.floor(rand() * 20);
+  d += ` V${H - 8} h${gap}`;
+  x += gap;
+}
+d += ` V${H} Z`;
+---
+<svg class="skyline" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="xMidYMax slice" aria-hidden="true" fill="currentColor"><path d={d} /></svg>

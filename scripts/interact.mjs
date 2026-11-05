@@ -1,0 +1,34 @@
+// Interaction smoke test: pin hover highlight, building click scroll, theme toggle, no-WebGL fallback.
+import { chromium } from 'playwright-core';
+const exe = 'C:/Program Files/Google/Chrome/Application/chrome.exe';
+const url = 'http://127.0.0.1:8765/site/index.html';
+const logs = [];
+let b = await chromium.launch({ executablePath: exe, args: ['--use-angle=d3d11', '--ignore-gpu-blocklist'] });
+let p = await b.newPage({ viewport: { width: 1440, height: 900 } });
+p.on('console', m => logs.push(m.type() + ': ' + m.text()));
+p.on('pageerror', e => logs.push('pageerror: ' + e.message));
+await p.goto(url); await p.waitForTimeout(4000);
+console.log('ready:', await p.evaluate(() => document.getElementById('estate').className));
+await p.hover('[data-spot="workshop"]'); await p.waitForTimeout(400);
+await p.screenshot({ path: '../dev/i-hover.png', clip: { x: 900, y: 250, width: 420, height: 300 } });
+console.log('pin hot:', await p.evaluate(() => document.querySelector('[data-spot="workshop"]').classList.contains('is-hot')));
+// click the castle in the 3D view: project the keep pin position downward a bit
+const box = await p.locator('[data-spot="keep"]').boundingBox();
+await p.mouse.move(10, 10); await p.waitForTimeout(200);
+await p.mouse.click(box.x + box.width / 2, box.y + box.height + 120);
+await p.waitForTimeout(1500);
+console.log('scrollY after castle click:', await p.evaluate(() => Math.round(scrollY)), 'about top:', await p.evaluate(() => Math.round(document.getElementById('about').getBoundingClientRect().top)));
+await p.evaluate(() => scrollTo(0, 0)); await p.waitForTimeout(800);
+await p.click('#theme-btn'); await p.waitForTimeout(2500);
+console.log('theme:', await p.evaluate(() => document.documentElement.dataset.theme), 'label:', await p.getAttribute('#theme-btn', 'aria-label'), 'stored:', await p.evaluate(() => localStorage.getItem('castle-theme')));
+await p.screenshot({ path: '../dev/i-night.png' });
+await p.evaluate(() => localStorage.removeItem('castle-theme'));
+await b.close();
+b = await chromium.launch({ executablePath: exe, args: ['--disable-webgl', '--disable-3d-apis'] });
+p = await b.newPage({ viewport: { width: 1440, height: 900 } });
+p.on('pageerror', e => logs.push('pageerror(nogl): ' + e.message));
+await p.goto(url); await p.waitForTimeout(2500);
+console.log('nogl estate:', await p.evaluate(() => document.getElementById('estate').className), 'seal:', await p.evaluate(() => document.getElementById('seal').className));
+await p.screenshot({ path: '../dev/i-nogl.png' });
+await b.close();
+console.log(logs.join('\n'));
